@@ -1,0 +1,67 @@
+---
+title: "Problem 5"
+author: "Nidhi"
+date: "2022-11-16"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 5: Computational Finance - Modelling Stock prices
+
+1. Estimate the parameters of the models $\theta=(\alpha,\beta,\sigma)$ using the method of moments type plug-in estimator discussed in the class.
+
+2. Estimate the parameters using the `lm` built-in function of `R`. Note that `lm` using the OLS method.
+
+3. Fill-up the following table
+
+Parameters | Method of Moments | OLS
+-----------|-------------------|-----
+$\alpha$   |                   |
+$\beta$    |                   |
+$\sigma$   |                   |
+
+4. If the current value of Nifty is 18000 and it goes up to 18200. The current value of TCS is Rs. 3200/-. How much you can expect TCS price to go up?
+
+```{r, warning=FALSE}
+library(quantmod)
+getSymbols('TCS.NS')
+getSymbols('^NSEI')
+
+
+TCS_rt <- diff(log(TCS.NS$TCS.NS.Adjusted))
+Nifty_rt <- diff(log(NSEI$NSEI.Adjusted))
+
+retrn <- cbind.xts(TCS_rt, Nifty_rt)
+retrn <- na.omit(data.frame(retrn))
+
+names(retrn) = c('TCS', 'Nifty50')
+
+covariance <- cov(retrn[,'Nifty50'], retrn[, 'TCS'])
+nifty.var <- var(retrn[, 'Nifty50'])
+beta <- covariance/nifty.var
+
+tcs.mean <- mean(retrn[,'TCS'])
+nifty.mean <- mean(retrn[, 'Nifty50'])
+alpha <- tcs.mean - beta*nifty.mean
+
+sigma = sqrt((sum((retrn[,'TCS']-alpha-beta*retrn[,'Nifty50'])^2))/length(retrn[,'TCS']))
+
+fit <- summary(lm(TCS ~ Nifty50, data = retrn))
+
+ols.alpha <- fit$coefficients[1]
+ols.beta <- fit$coefficients[2]
+ols.sigma <- fit$sigma
+
+TCS_return = alpha + beta*log(18200/18000)
+TCS_new = 3200*exp(TCS_return)
+
+```
+
+Parameters | Method of Moments | OLS
+-----------|-------------------|-----
+$\alpha$   |0.0004616524       |0.0004616524
+$\beta$    |0.7436617          |0.7436617
+$\sigma$   |0.01618042         |0.01618481
